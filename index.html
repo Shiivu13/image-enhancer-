@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Photo Enhance</title>
+  <meta name="description" content="Client-side AI/image processing photo enhancement.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; worker-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <div class="brand" aria-label="AI Photo Enhance">AI Photo Enhance</div>
+      <nav class="nav" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#upload">Upload</a>
+        <a href="#result">Result</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" role="main">
+    <section class="hero" id="features">
+      <h1>Enhance your photos instantly, privately, in your browser</h1>
+      <p>Drag and drop an image to automatically improve exposure, color, detail, and clarity. Nothing leaves your device.</p>
+    </section>
+
+    <section class="ads">
+      <div id="ad-top" class="ad-slot" data-slot="top" aria-label="Advertisement" role="complementary"></div>
+    </section>
+
+    <section class="upload" id="upload">
+      <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Upload image via drag and drop or browse">
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose image file" />
+        <div class="dropzone-inner">
+          <div class="drop-icon" aria-hidden="true">📷</div>
+          <div>
+            <strong>Drag & drop</strong> a photo here, or
+            <button id="browseBtn" class="btn">Browse</button>
+          </div>
+          <div class="hint">JPEG, PNG, or WebP up to 25 MB</div>
+        </div>
+      </div>
+      <div id="validationMsg" class="validation" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="controls" aria-label="Enhancement controls">
+      <div class="control-row">
+        <label>
+          Preset
+          <select id="presetSelect">
+            <option value="auto">Auto</option>
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+            <option value="vintage">Vintage</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+        <label class="toggle"><input id="autoProcess" type="checkbox" checked> Auto-process</label>
+        <label class="toggle"><input id="advancedMode" type="checkbox"> Advanced Mode</label>
+      </div>
+
+      <div class="grid sliders" id="manualSliders" hidden>
+        <label>Exposure <input id="exposure" type="range" min="-1" max="1" step="0.01" value="0"><span data-for="exposure"></span></label>
+        <label>Contrast <input id="contrast" type="range" min="0" max="2" step="0.01" value="1"><span data-for="contrast"></span></label>
+        <label>Saturation <input id="saturation" type="range" min="0" max="2" step="0.01" value="1"><span data-for="saturation"></span></label>
+        <label>Vibrance <input id="vibrance" type="range" min="0" max="2" step="0.01" value="1"><span data-for="vibrance"></span></label>
+        <label>Shadows <input id="shadows" type="range" min="0" max="2" step="0.01" value="1"><span data-for="shadows"></span></label>
+        <label>Highlights <input id="highlights" type="range" min="0" max="2" step="0.01" value="1"><span data-for="highlights"></span></label>
+        <label>Noise Reduction <input id="denoise" type="range" min="0" max="1" step="0.01" value="0.2"><span data-for="denoise"></span></label>
+        <label>Sharpen <input id="sharpen" type="range" min="0" max="2" step="0.01" value="0.4"><span data-for="sharpen"></span></label>
+      </div>
+
+      <div class="control-row">
+        <button id="processBtn" class="btn primary" disabled>Enhance Photo</button>
+        <button id="resetBtn" class="btn" disabled>Reset</button>
+      </div>
+    </section>
+
+    <section class="controls" id="advancedControls" aria-label="Advanced controls" hidden>
+      <div class="grid sliders">
+        <label>CLAHE Strength <input id="clahe" type="range" min="0" max="2" step="0.05" value="1"><span data-for="clahe"></span></label>
+        <label>Bilateral Denoise <input id="bilateral" type="range" min="0" max="1" step="0.01" value="0.3"><span data-for="bilateral"></span></label>
+        <label>Unsharp Amount <input id="usharp" type="range" min="0" max="2" step="0.01" value="0.6"><span data-for="usharp"></span></label>
+        <label>Unsharp Threshold <input id="uthresh" type="range" min="0" max="64" step="1" value="8"><span data-for="uthresh"></span></label>
+        <label>Color Space
+          <select id="colorSpace">
+            <option value="srgb">sRGB (fast)</option>
+            <option value="linear">Linear (best)</option>
+          </select>
+        </label>
+        <label>Upscale
+          <select id="upscale">
+            <option value="1">None</option>
+            <option value="2">2x</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="progress" aria-label="Processing progress" id="progressSection" hidden>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill" style="width:0%"></div></div>
+      <div id="progressText" class="progress-text">Ready</div>
+    </section>
+
+    <section class="result" id="result" hidden>
+      <div class="compare">
+        <div class="canvas-wrap">
+          <canvas id="canvasBefore" aria-label="Original image"></canvas>
+          <div class="after-clip" id="afterClip">
+            <canvas id="canvasAfter" aria-label="Enhanced image"></canvas>
+          </div>
+          <input id="slider" class="slider" type="range" min="0" max="100" value="50" aria-label="Before and after slider">
+        </div>
+      </div>
+      <div class="result-actions">
+        <label>Format
+          <select id="downloadFormat">
+            <option value="image/jpeg">JPEG</option>
+            <option value="image/png">PNG</option>
+            <option value="image/webp">WebP</option>
+          </select>
+        </label>
+        <label>Quality
+          <input id="downloadQuality" type="range" min="0.5" max="1" step="0.01" value="0.92">
+        </label>
+        <button id="downloadBtn" class="btn primary" disabled>Download</button>
+      </div>
+    </section>
+
+    <section class="ads">
+      <div id="ad-bottom" class="ad-slot" data-slot="bottom" aria-label="Advertisement" role="complementary"></div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">Processed privately in your browser. No uploads to a server.</div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
+
